@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#050510" />
+<title>System · Træning</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23050510'/%3E%3Ctext x='50' y='70' font-size='58' text-anchor='middle' fill='%2300d2ff' font-family='sans-serif' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23050510'/%3E%3Ctext x='50' y='70' font-size='58' text-anchor='middle' fill='%2300d2ff' font-family='sans-serif' font-weight='bold'%3ES%3C/text%3E%3C/svg%3E" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>
+  // Vagthund: hvis siden stadig viser "Indlæser..." efter 5 sekunder,
+  // så er noget galt — vis præcis hvad, i stedet for at hænge for evigt.
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      var rootEl = document.getElementById('root');
+      if (rootEl && rootEl.textContent.indexOf('Indlæser') !== -1) {
+        var missing = [];
+        if (typeof React === 'undefined') missing.push('React');
+        if (typeof ReactDOM === 'undefined') missing.push('ReactDOM');
+        if (typeof Babel === 'undefined') missing.push('Babel');
+        var msg = missing.length
+          ? 'Kunne ikke indlæse: ' + missing.join(', ') + '. Tjek din internetforbindelse, eller at intet (fx en adblocker) blokerer unpkg.com.'
+          : 'Siden loader stadig efter 5 sekunder. Åbn browserens konsol (F12) for at se en fejlbesked, og send den til Claude.';
+        rootEl.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#050510;color:#ff6b6b;font-family:monospace;padding:24px;text-align:center;">' + msg + '</div>';
+      }
+    }, 5000);
+  });
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+html, body { margin: 0; padding: 0; background: #050510; }
+
+.font-mono { font-family: 'Space Mono', monospace; }
+.text-2xs { font-size: 10px; line-height: 1.3; }
+.text-3xs { font-size: 9px; line-height: 1.25; }
+.tracking-ultra { letter-spacing: 0.3em; }
+
+@keyframes sl-pulse {
+  0%, 100% { box-shadow: 0 0 12px 0 rgba(0,210,255,0.22), inset 0 0 18px rgba(0,210,255,0.05); }
+  50% { box-shadow: 0 0 22px 4px rgba(0,210,255,0.38), inset 0 0 22px rgba(0,210,255,0.09); }
+}
+.sl-panel { animation: sl-pulse 4.5s ease-in-out infinite; }
+
+@keyframes sl-pulse-danger {
+  0%, 100% { box-shadow: 0 0 12px 0 rgba(255,75,75,0.28); }
+  50% { box-shadow: 0 0 26px 6px rgba(255,75,75,0.5); }
+}
+.sl-danger { animation: sl-pulse-danger 2.1s ease-in-out infinite; }
+
+@keyframes sl-scale-in {
+  0% { opacity: 0; transform: scale(0.9) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.sl-modal-in { animation: sl-scale-in 0.3s cubic-bezier(0.2,0.8,0.3,1) both; }
+
+@keyframes sl-scan {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(240px); opacity: 0; }
+}
+.sl-scanline { animation: sl-scan 2.6s linear infinite; }
+
+@keyframes sl-fadein {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.sl-fadein { animation: sl-fadein 0.25s ease both; }
+
+input[type="range"] { accent-color: #00d2ff; }
+
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-thumb { background: #1c2947; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<div id="root">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#050510;color:#00d2ff;font-family:sans-serif;">Indlæser...</div>
+</div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+/* ============================================================
+   ICONS — hand-drawn SVGs, no external icon library needed
+   ============================================================ */
+function Icon({ size = 16, style = {}, className = '', strokeWidth = 2, children }) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={strokeWidth}
+      strokeLinecap="round" strokeLinejoin="round"
+      style={style} className={className}
+    >
+      {children}
+    </svg>
+  );
+}
+
+function IconDumbbell(props) {
+  return (
+    <Icon {...props}>
+      <rect x="1" y="9" width="4" height="6" rx="1" />
+      <rect x="19" y="9" width="4" height="6" rx="1" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <line x1="3" y1="7" x2="3" y2="17" />
+      <line x1="21" y1="7" x2="21" y2="17" />
+    </Icon>
+  );
+}
+
+function IconZap(props) {
+  return (
+    <Icon {...props}>
+      <polygon points="13,2 4,14 11,14 9,22 20,10 13,10" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}
+
+function IconShield(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 2 L20 5 V11 C20 16.5 16.8 20 12 22 C7.2 20 4 16.5 4 11 V5 Z" />
+    </Icon>
+  );
+}
+
+function IconEye(props) {
+  return (
+    <Icon {...props}>
+      <path d="M1 12 C4 6 9 4 12 4 C15 4 20 6 23 12 C20 18 15 20 12 20 C9 20 4 18 1 12 Z" />
+      <circle cx="12" cy="12" r="3" />
+    </Icon>
+  );
+}
+
+function IconBrain(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="9" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="15" r="1.3" fill="currentColor" stroke="none" />
+      <line x1="9" y1="9" x2="15" y2="9" />
+      <line x1="9" y1="9" x2="12" y2="15" />
+      <line x1="15" y1="9" x2="12" y2="15" />
+    </Icon>
+  );
+}
+
+function IconFlame(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 2 C12 2 6 8 6 13 C6 17.5 8.5 21 12 21 C15.5 21 18 17.5 18 13 C18 11 17 9.5 16 8.5 C16 10 15 11 14 11 C14.5 9 13.5 6 12 2 Z" />
+    </Icon>
+  );
+}
+
+function IconTrophy(props) {
+  return (
+    <Icon {...props}>
+      <path d="M7 4 H17 V9 C17 12 15 14 12 14 C9 14 7 12 7 9 Z" />
+      <path d="M7 5 C4 5 3 7 4 9 C4.7 10.7 6 11 7 10.7" />
+      <path d="M17 5 C20 5 21 7 20 9 C19.3 10.7 18 11 17 10.7" />
+      <line x1="12" y1="14" x2="12" y2="18" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="18" x2="12" y2="21" />
+    </Icon>
+  );
+}
+
+function IconSparkles(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3 L13.5 9.5 L20 11 L13.5 12.5 L12 19 L10.5 12.5 L4 11 L10.5 9.5 Z" fill="currentColor" stroke="none" />
+      <path d="M19 15 L19.7 17.3 L22 18 L19.7 18.7 L19 21 L18.3 18.7 L16 18 L18.3 17.3 Z" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}
+
+function IconTarget(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5.5" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}
+
+function IconSwords(props) {
+  return (
+    <Icon {...props}>
+      <line x1="5" y1="5" x2="19" y2="19" />
+      <line x1="19" y1="5" x2="5" y2="19" />
+      <circle cx="5" cy="19" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="19" r="1.5" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}
+
+function IconAlertTriangle(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3 L22 20 H2 Z" />
+      <line x1="12" y1="9" x2="12" y2="14" />
+      <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}
+
+function IconCheck(props) {
+  return (
+    <Icon {...props}>
+      <polyline points="4,13 9,18 20,6" />
+    </Icon>
+  );
+}
+
+function IconChevronRight(props) {
+  return (
+    <Icon {...props}>
+      <polyline points="9,4 17,12 9,20" />
+    </Icon>
+  );
+}
+
+function IconPencil(props) {
+  return (
+    <Icon {...props}>
+      <path d="M4 20 L4 16 L15 5 L19 9 L8 20 Z" />
+      <line x1="13" y1="7" x2="17" y2="11" />
+    </Icon>
+  );
+}
+
+function IconActivity(props) {
+  return (
+    <Icon {...props}>
+      <polyline points="2,12 6,12 9,4 13,20 16,12 22,12" />
+    </Icon>
+  );
+}
+
+/* ============================================================
+   DATA / CONFIG  (tune balancing here)
+   ============================================================ */
+const STAT_META = {
+  STR: { label: 'Styrke', icon: IconDumbbell, color: '#ff6b6b', desc: 'Vægtløftning, styrketræning, pull-ups' },
+  AGI: { label: 'Behændighed', icon: IconZap, color: '#ffb84d', desc: 'Sprint, HIIT, reb, burpees' },
+  VIT: { label: 'Udholdenhed', icon: IconShield, color: '#4ade80', desc: 'Distance, cykling, core, streaks' },
+  PER: { label: 'Sans', icon: IconEye, color: '#c792ff', desc: 'Kampsport, yoga, balance, reaktion' },
+  INT: { label: 'Intelligens', icon: IconBrain, color: '#f472b6', desc: 'Søvn, meditation, restitution' },
+};
+
+const RANKS = [
+  { name: 'F-RANK', min: 1, max: 9, color: '#8b93a8' },
+  { name: 'E-RANK', min: 10, max: 19, color: '#7fd0ff' },
+  { name: 'D-RANK', min: 20, max: 29, color: '#5cc4ff' },
+  { name: 'C-RANK', min: 30, max: 39, color: '#3ea8ff' },
+  { name: 'B-RANK', min: 40, max: 49, color: '#8b7bff' },
+  { name: 'A-RANK', min: 50, max: 69, color: '#c26bff' },
+  { name: 'S-RANK', min: 70, max: 89, color: '#ff6bd6' },
+  { name: 'SS-RANK', min: 90, max: 99, color: '#ffb347' },
+  { name: 'SSS-RANK', min: 100, max: Infinity, color: '#ffe066' },
+];
+
+// 🔧 JUSTÉR HER: EXP-kurvens hastighed. Lav = hurtigere levels.
+const EXP_CONFIG = {
+  base: 90,
+  exponent: 1.6,
+  tierMultipliers: [
+    { level: 30, mult: 1.35 },
+    { level: 50, mult: 1.25 },
+    { level: 70, mult: 1.3 },
+    { level: 90, mult: 1.4 },
+  ],
+};
+
+const QUEST_ITEMS = [
+  { key: 'pushups', label: 'Armbøjninger', unit: '', step: 10, inputStep: 1, icon: IconDumbbell },
+  { key: 'situps', label: 'Mavebøjninger', unit: '', step: 10, inputStep: 1, icon: IconFlame },
+  { key: 'squats', label: 'Squats', unit: '', step: 10, inputStep: 1, icon: IconZap },
+  { key: 'runKm', label: 'Løb', unit: ' km', step: 1, inputStep: 0.1, icon: IconActivity },
+];
+
+// 🔧 JUSTÉR HER: muskelgrupper og øvelser til vælgeren i "Log Træning"
+// Bygget til udstyr: kropsvægt + 2x 2 kg håndvægte + 12 kg kettlebell (ingen bænk/bar/maskiner).
+// mode: 'reps' (sæt x reps), 'duration' (minutter), eller 'distance' (km).
+// exercise.stat overskriver group.stat (bruges af Kondition, hvor øvelser rammer forskellige stats).
+// exercise.questLink kobler øvelsen til et felt i Dagens Quest, så loggen også tæller der.
+const TRAINING_GROUPS = [
+  {
+    id: 'bryst', label: 'Bryst', stat: 'STR', icon: IconDumbbell,
+    exercises: [
+      { name: 'Armbøjninger', mode: 'reps', questLink: 'pushups' },
+      { name: 'Diamant-armbøjninger', mode: 'reps' },
+      { name: 'Skrå armbøjninger (fødder hævet)', mode: 'reps' },
+      { name: 'Kettlebell gulvpres', mode: 'reps' },
+    ],
+  },
+  {
+    id: 'ryg', label: 'Ryg', stat: 'STR', icon: IconDumbbell,
+    exercises: [
+      { name: 'Kettlebell roning (én arm)', mode: 'reps' },
+      { name: 'Kettlebell dødløft', mode: 'reps' },
+      { name: 'Håndvægt roning', mode: 'reps' },
+      { name: 'Superman / ryghævning', mode: 'reps' },
+    ],
+  },
+  {
+    id: 'skuldre', label: 'Skuldre', stat: 'STR', icon: IconDumbbell,
+    exercises: [
+      { name: 'Kettlebell skulderpres', mode: 'reps' },
+      { name: 'Håndvægt sideløft', mode: 'reps' },
+      { name: 'Håndvægt frontløft', mode: 'reps' },
+      { name: 'Kettlebell halo', mode: 'reps' },
+    ],
+  },
+  {
+    id: 'arme', label: 'Arme', stat: 'STR', icon: IconDumbbell,
+    exercises: [
+      { name: 'Håndvægt biceps curl', mode: 'reps' },
+      { name: 'Kettlebell hammer curl', mode: 'reps' },
+      { name: 'Stoledips', mode: 'reps' },
+      { name: 'Kettlebell triceps extension', mode: 'reps' },
+    ],
+  },
+  {
+    id: 'mave', label: 'Mave', stat: 'VIT', icon: IconShield,
+    exercises: [
+      { name: 'Mavebøjninger', mode: 'reps', questLink: 'situps' },
+      { name: 'Russian twists (med kettlebell)', mode: 'reps' },
+      { name: 'Benløft', mode: 'reps' },
+      { name: 'Planke', mode: 'duration', maxMinutes: 15 },
+    ],
+  },
+  {
+    id: 'ben', label: 'Ben', stat: 'STR', icon: IconDumbbell,
+    exercises: [
+      { name: 'Squats', mode: 'reps', questLink: 'squats' },
+      { name: 'Goblet squats (kettlebell)', mode: 'reps', questLink: 'squats' },
+      { name: 'Kettlebell svings', mode: 'reps' },
+      { name: 'Udfald', mode: 'reps' },
+      { name: 'Rumænsk dødløft (kettlebell)', mode: 'reps' },
+    ],
+  },
+  {
+    id: 'kondition', label: 'Kondition', stat: 'AGI', icon: IconActivity,
+    exercises: [
+      { name: 'Løb', mode: 'distance', stat: 'AGI', questLink: 'runKm' },
+      { name: 'Cykling', mode: 'duration', stat: 'VIT' },
+      { name: 'Sjipning', mode: 'duration', stat: 'AGI' },
+      { name: 'Svømning', mode: 'duration', stat: 'VIT' },
+    ],
+  },
+  {
+    id: 'sanser', label: 'Sanser', stat: 'PER', icon: IconEye,
+    exercises: [
+      { name: 'Yoga', mode: 'duration' },
+      { name: 'Kampsport', mode: 'duration' },
+      { name: 'Balancetræning', mode: 'duration' },
+      { name: 'Stretching', mode: 'duration' },
+    ],
+  },
+  {
+    id: 'restitution', label: 'Restitution', stat: 'INT', icon: IconBrain,
+    exercises: [
+      { name: 'Søvn', mode: 'duration', maxMinutes: 600 },
+      { name: 'Meditation', mode: 'duration' },
+      { name: 'Aktiv restitutionsdag', mode: 'duration' },
+    ],
+  },
+];
+
+// 🔧 JUSTÉR HER: nøgleord der matcher hver stat ved fritekst-logging
+const KEYWORDS = {
+  STR: ['styrke', 'vægt', 'vaegt', 'bænk', 'baenk', 'dødløft', 'dodloft', 'markløft', 'pull-up', 'pullup', 'pull up', 'chins', 'curl', 'skulderpres', 'presse', 'armbøjning', 'armbøjninger', 'pushup', 'pushups'],
+  AGI: ['sprint', 'hiit', 'reb', 'rebspring', 'jump rope', 'spring', 'burpee', 'burpees', 'hurtigløb'],
+  VIT: ['cykl', 'cykel', 'cycling', 'kondition', 'core', 'planke', 'plank', 'mavebøjning', 'mave'],
+  PER: ['yoga', 'kampsport', 'karate', 'judo', 'taekwondo', 'boksning', 'boxing', 'balance', 'reaktion', 'stretching', 'udspænding'],
+  INT: ['søvn', 'sovn', 'sleep', 'meditation', 'mindfulness', 'hvile', 'restitution', 'recovery', 'vand', 'hydrering', 'kost', 'nutrition', 'protein', 'læsning'],
+};
+const RUN_WORDS = ['løb', 'lob', 'jog', 'running', 'run', 'løbetur'];
+
+const ACHIEVEMENTS = [
+  { id: 'streak7', title: 'Ulveslagter', desc: 'Hold en 7-dages streak', condition: p => p.streak >= 7 },
+  { id: 'streak30', title: 'Jernviljet', desc: 'Hold en 30-dages streak', condition: p => p.streak >= 30 },
+  { id: 'rank_e', title: 'Opvågnet', desc: 'Nå E-Rank (Level 10)', condition: p => p.level >= 10 },
+  { id: 'rank_c', title: 'Dybdeudforsker', desc: 'Nå C-Rank (Level 30)', condition: p => p.level >= 30 },
+  { id: 'rank_s', title: 'S-Rank Jæger', desc: 'Nå S-Rank (Level 70)', condition: p => p.level >= 70 },
+  { id: 'balanced', title: 'Skyggens Ligevægt', desc: 'Alle evner over 50', condition: p => Object.values(p.stats).every(v => v >= 50) },
+];
+
+const CLASS_INFO = {
+  Berserker: { desc: 'Rå styrke i sin reneste form. Du nedkæmper modstand med brute force.' },
+  Snigmorder: { desc: 'Hurtig, præcis, dødbringende. Du slår til, før modstanderen når at reagere.' },
+  Ridder: { desc: 'Urokkelig og sej. Du absorberer belastning som ingen andre.' },
+  Troldmand: { desc: 'Skarpt sind, roligt nervesystem. Din styrke ligger i restitution og fokus.' },
+  Jæger: { desc: 'Skarpe sanser og perfekt timing. Du læser situationen, før den udfolder sig.' },
+  Skyggemonark: { desc: 'Ingen svaghed, ingen ubalance. Fuld kontrol over alle domæner.' },
+};
+
+const TABS = [
+  { id: 'status', label: 'Status', icon: IconSparkles },
+  { id: 'quest', label: 'Dagens Quest', icon: IconTarget },
+  { id: 'log', label: 'Log Træning', icon: IconSwords },
+  { id: 'history', label: 'Historik', icon: IconTrophy },
+];
+
+/* ============================================================
+   PURE HELPERS
+   ============================================================ */
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function expToNext(level) {
+  let exp = EXP_CONFIG.base * Math.pow(level, EXP_CONFIG.exponent);
+  EXP_CONFIG.tierMultipliers.forEach(t => { if (level >= t.level) exp *= t.mult; });
+  return Math.max(50, Math.round(exp / 10) * 10);
+}
+
+function getRankInfo(level) {
+  return RANKS.find(r => level >= r.min && level <= r.max) || RANKS[RANKS.length - 1];
+}
+
+function computeClass(stats) {
+  const entries = Object.entries(stats);
+  const values = entries.map(([, v]) => v);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  if (max - min <= 8) return 'Skyggemonark';
+  const top = entries.find(([, v]) => v === max)[0];
+  const map = { STR: 'Berserker', AGI: 'Snigmorder', VIT: 'Ridder', INT: 'Troldmand', PER: 'Jæger' };
+  return map[top];
+}
+
+function isQuestComplete(p) {
+  return QUEST_ITEMS.every(q => p.dailyProgress[q.key] >= p.dailyGoals[q.key]);
+}
+
+function applyDailyReset(p) {
+  const today = todayStr();
+  if (p.questDate === today) return p;
+  const wasComplete = isQuestComplete(p);
+  const next = { ...p };
+  if (wasComplete) {
+    next.streak = (p.streak || 0) + 1;
+  } else if (p.questDate) {
+    next.streak = 0;
+    next.penaltyZone = true;
+  }
+  next.questDate = today;
+  next.dailyProgress = { pushups: 0, situps: 0, squats: 0, runKm: 0 };
+  next.dailyRewardClaimed = false;
+  return next;
+}
+
+function applyExpGain(p, amount) {
+  let level = p.level;
+  let exp = p.exp + amount;
+  const levelUps = [];
+  let needed = expToNext(level);
+  while (exp >= needed) {
+    exp -= needed;
+    level += 1;
+    levelUps.push(level);
+    needed = expToNext(level);
+  }
+  const jobChangeTriggered = level >= 40 && !p.jobChangeSeen && levelUps.length > 0;
+  return { player: { ...p, level, exp }, levelUps, jobChangeTriggered };
+}
+
+function evaluateAchievements(p) {
+  const unlocked = [...p.titles];
+  const newlyUnlocked = [];
+  ACHIEVEMENTS.forEach(a => {
+    if (!unlocked.includes(a.id) && a.condition(p)) {
+      unlocked.push(a.id);
+      newlyUnlocked.push(a);
+    }
+  });
+  return { titles: unlocked, newlyUnlocked };
+}
+
+// 🔧 JUSTÉR HER: hvordan fritekst-træning omregnes til EXP + stat-point
+function parseWorkoutText(raw) {
+  const text = raw.toLowerCase();
+  const km = text.match(/(\d+[.,]?\d*)\s?km/i);
+  const min = text.match(/(\d+)\s?(min|minut\w*)/i);
+  const reps = text.match(/(\d+)\s?(reps|gentagelser|stk)\b/i);
+  const kmVal = km ? parseFloat(km[1].replace(',', '.')) : 0;
+  const minVal = min ? parseInt(min[1], 10) : 0;
+  const repsVal = reps ? parseInt(reps[1], 10) : 0;
+
+  const matchedStats = new Set();
+  Object.entries(KEYWORDS).forEach(([stat, words]) => {
+    if (words.some(w => text.includes(w))) matchedStats.add(stat);
+  });
+  const hasRunWord = RUN_WORDS.some(w => text.includes(w));
+  if (hasRunWord) matchedStats.add(kmVal >= 5 ? 'VIT' : 'AGI');
+
+  if (matchedStats.size === 0) return null;
+
+  const effort = minVal + kmVal * 6 + repsVal * 0.3;
+  const baseExp = 25 + effort * 3;
+  const expGained = Math.max(20, Math.round(baseExp / 5) * 5);
+  const perStat = Math.min(6, Math.max(1, Math.round(1 + effort / 25)));
+
+  const statsGained = {};
+  matchedStats.forEach(s => { statsGained[s] = perStat; });
+
+  return { statsGained, expGained };
+}
+
+function DEFAULT_PLAYER() {
+  return {
+    name: 'Spiller',
+    level: 1,
+    exp: 0,
+    stats: { STR: 10, AGI: 10, VIT: 10, PER: 10, INT: 10 },
+    streak: 0,
+    questDate: todayStr(),
+    dailyProgress: { pushups: 0, situps: 0, squats: 0, runKm: 0 },
+    dailyGoals: { pushups: 100, situps: 100, squats: 100, runKm: 10 },
+    dailyRewardClaimed: false,
+    penaltyZone: false,
+    class: null,
+    jobChangeSeen: false,
+    titles: [],
+    history: [],
+  };
+}
+
+const STORAGE_KEY = 'sololevel_player_v1';
+
+// localStorage is synchronous and lives on this device/browser only —
+// no network round-trip, no external dependency, works offline.
+function loadPlayer() {
+  const fallback = DEFAULT_PLAYER();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    const merged = {
+      ...fallback,
+      ...parsed,
+      stats: { ...fallback.stats, ...(parsed.stats || {}) },
+      dailyProgress: { ...fallback.dailyProgress, ...(parsed.dailyProgress || {}) },
+      dailyGoals: { ...fallback.dailyGoals, ...(parsed.dailyGoals || {}) },
+      titles: parsed.titles || [],
+      history: parsed.history || [],
+    };
+    return applyDailyReset(merged);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function savePlayer(player) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(player));
+  } catch (e) {
+    // storage full or unavailable (e.g. private browsing) — fail silently
+  }
+}
+
+/* ============================================================
+   RADAR CHART — hand-rolled SVG pentagon, no chart library needed
+   ============================================================ */
+function RadarChartSVG({ data, max }) {
+  const size = 260;
+  const cx = size / 2, cy = size / 2;
+  const radius = 88;
+  const angleStep = (Math.PI * 2) / data.length;
+
+  function pointFor(value, i) {
+    const angle = -Math.PI / 2 + i * angleStep;
+    const r = Math.max(0, Math.min(1, value / max)) * radius;
+    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+  }
+
+  const levels = [0.25, 0.5, 0.75, 1];
+  const dataPoints = data.map((d, i) => pointFor(d.value, i));
+  const dataPath = dataPoints.map(p => p.join(',')).join(' ');
+
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width="100%" height={size}>
+      {levels.map((lvl, gi) => {
+        const pts = data.map((_, i) => pointFor(max * lvl, i).join(',')).join(' ');
+        return <polygon key={gi} points={pts} fill="none" stroke="#1c2947" strokeWidth="1" />;
+      })}
+      {data.map((d, i) => {
+        const [x, y] = pointFor(max, i);
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#1c2947" strokeWidth="1" />;
+      })}
+      <polygon points={dataPath} fill="#00d2ff" fillOpacity="0.35" stroke="#00d2ff" strokeWidth="2" />
+      {data.map((d, i) => {
+        const [lx, ly] = pointFor(max * 1.24, i);
+        return (
+          <text key={i} x={lx} y={ly} fill="#9fb2d9" fontSize="12" fontFamily="'Space Mono', monospace" textAnchor="middle" dominantBaseline="middle">
+            {d.stat}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ============================================================
+   SMALL PRESENTATIONAL COMPONENTS
+   ============================================================ */
+function SystemPanel({ children, className = '', danger = false, glow = true, style = {} }) {
+  const clip = 'polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)';
+  return (
+    <div
+      className={className}
+      style={{
+        clipPath: clip,
+        padding: 1,
+        background: danger ? 'linear-gradient(135deg,#ff4b4b,#7a1f1f)' : 'linear-gradient(135deg,#00d2ff,#3a7bd5)',
+        ...style,
+      }}
+    >
+      <div
+        className={glow ? (danger ? 'sl-danger' : 'sl-panel') : ''}
+        style={{
+          clipPath: clip,
+          background: 'rgba(8,12,26,0.86)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          padding: '1rem',
+          position: 'relative',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ExpBar({ exp, needed }) {
+  const pct = Math.min(100, (exp / needed) * 100);
+  return (
+    <div>
+      <div className="flex justify-between font-mono text-2xs mb-1" style={{ color: '#7c8db5' }}>
+        <span>EXP</span>
+        <span>{Math.floor(exp)} / {needed}</span>
+      </div>
+      <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#00d2ff,#3a7bd5)', boxShadow: '0 0 10px #00d2ff' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function BackgroundFX() {
+  return (
+    <div
+      className="fixed inset-0 pointer-events-none"
+      style={{
+        backgroundImage: `
+          radial-gradient(ellipse at 20% -10%, rgba(58,123,213,0.25), transparent 50%),
+          radial-gradient(ellipse at 100% 10%, rgba(0,210,255,0.12), transparent 45%),
+          linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)
+        `,
+        backgroundSize: 'auto, auto, 42px 42px, 42px 42px',
+        zIndex: 0,
+      }}
+    />
+  );
+}
+
+function Toast({ message }) {
+  return (
+    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 sl-fadein">
+      <div
+        className="flex items-center gap-2 px-4 py-2.5 uppercase tracking-wide text-xs"
+        style={{
+          background: 'rgba(8,12,26,0.95)', border: '1px solid #00d2ff', color: '#e8f4ff',
+          clipPath: 'polygon(10px 0,100% 0,100% 100%,0 100%,0 10px)', boxShadow: '0 0 20px rgba(0,210,255,0.3)',
+        }}
+      >
+        <IconTrophy size={14} style={{ color: '#ffd166' }} />
+        {message}
+      </div>
+    </div>
+  );
+}
+
+function PenaltyBanner({ onGoLog, onAccept }) {
+  return (
+    <div className="relative z-20 sl-danger" style={{ background: 'linear-gradient(90deg, rgba(122,31,31,0.9), rgba(255,75,75,0.22))', borderBottom: '1px solid #ff4b4b' }}>
+      <div className="max-w-5xl mx-auto px-4 py-2.5 flex flex-wrap items-center gap-3 justify-between">
+        <div className="flex items-center gap-2">
+          <IconAlertTriangle size={16} style={{ color: '#ff9a9a' }} />
+          <p className="uppercase tracking-wide text-xs sm:text-sm" style={{ color: '#ffe3e3' }}>
+            Penalty Zone — Dagens Quest blev ikke fuldført
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={onGoLog} className="font-mono text-2xs uppercase px-2.5 py-1.5 rounded-sm" style={{ background: '#ff4b4b', color: '#1a0000' }}>
+            Log straftræning
+          </button>
+          <button onClick={onAccept} className="font-mono text-2xs uppercase px-2.5 py-1.5 rounded-sm" style={{ border: '1px solid #ff4b4b', color: '#ffdada', background: 'transparent' }}>
+            Accepter (-5% EXP)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Header({ player, onRename, resetArmed, onResetClick }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(player.name);
+  useEffect(() => { setDraft(player.name); }, [player.name]);
+
+  return (
+    <header className="relative z-10 max-w-5xl mx-auto px-4 pt-6 pb-3 flex items-start justify-between gap-3">
+      <div>
+        <p className="font-mono text-2xs tracking-ultra" style={{ color: '#3a7bd5' }}>SYSTEM · SPILLERSTATUS</p>
+        {editing ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={() => { onRename(draft.trim() || 'Spiller'); setEditing(false); }}
+            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            className="text-2xl font-bold uppercase bg-transparent border-b outline-none"
+            style={{ color: '#e8f4ff', borderColor: '#00d2ff', minWidth: 160, maxWidth: 220 }}
+          />
+        ) : (
+          <button onClick={() => setEditing(true)} className="text-2xl font-bold uppercase flex items-center gap-2" style={{ color: '#e8f4ff' }}>
+            {player.name}
+            <IconPencil size={14} style={{ color: '#5b6b8c' }} />
+          </button>
+        )}
+      </div>
+      <button
+        onClick={onResetClick}
+        className="font-mono text-2xs uppercase tracking-wide px-3 py-2 rounded-sm shrink-0"
+        style={{ color: resetArmed ? '#ff4b4b' : '#5b6b8c', border: `1px solid ${resetArmed ? '#ff4b4b' : '#1c2947'}`, background: 'transparent' }}
+      >
+        {resetArmed ? 'Bekræft nulstil?' : 'Nulstil'}
+      </button>
+    </header>
+  );
+}
+
+function TabBar({ active, setActive, penalty }) {
+  return (
+    <nav className="relative z-10 max-w-5xl mx-auto px-4 pb-3">
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {TABS.map(t => {
+          const Icon = t.icon;
+          const isActive = active === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setActive(t.id)}
+              className="flex items-center gap-1.5 px-3.5 py-2 shrink-0 text-xs font-semibold uppercase tracking-wider transition-colors"
+              style={{
+                color: isActive ? '#00131a' : '#9fb2d9',
+                background: isActive ? 'linear-gradient(90deg,#00d2ff,#3a7bd5)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isActive ? 'transparent' : '#1c2947'}`,
+                clipPath: 'polygon(8px 0,100% 0,100% 100%,0 100%,0 8px)',
+              }}
+            >
+              <Icon size={14} />
+              {t.label}
+              {t.id === 'quest' && penalty && <span className="rounded-full" style={{ width: 6, height: 6, background: '#ff4b4b' }} />}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+function StatusTab({ player, rank, needed }) {
+  const maxStatVal = Math.max(...Object.values(player.stats));
+  const radarMax = Math.max(60, Math.ceil((maxStatVal * 1.25) / 10) * 10);
+  const radarData = Object.entries(player.stats).map(([k, v]) => ({ stat: k, value: v }));
+  const preview = computeClass(player.stats);
+
+  return (
+    <div className="space-y-4 pt-1">
+      <SystemPanel>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div
+            className="relative shrink-0 flex items-center justify-center rounded-full"
+            style={{ width: 84, height: 84, border: '2px solid #00d2ff', boxShadow: '0 0 20px rgba(0,210,255,0.35), inset 0 0 14px rgba(0,210,255,0.15)' }}
+          >
+            <div className="text-center">
+              <p className="font-mono text-3xs tracking-ultra" style={{ color: '#7c8db5' }}>LVL</p>
+              <p className="text-2xl font-bold leading-none">{player.level}</p>
+            </div>
+          </div>
+          <div className="flex-1" style={{ minWidth: 160 }}>
+            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              <span className="text-xs font-bold uppercase px-2 py-0.5 rounded-sm" style={{ background: rank.color, color: '#050510' }}>{rank.name}</span>
+              {player.class && (
+                <span className="text-xs font-bold uppercase px-2 py-0.5 rounded-sm" style={{ border: '1px solid #c792ff', color: '#c792ff' }}>{player.class}</span>
+              )}
+              <span className="font-mono text-2xs flex items-center gap-1" style={{ color: '#ffb347' }}>
+                <IconFlame size={12} /> {player.streak} dages streak
+              </span>
+            </div>
+            <ExpBar exp={player.exp} needed={needed} />
+          </div>
+        </div>
+        {!player.class && (
+          <p className="font-mono text-2xs mt-3" style={{ color: '#5b6b8c' }}>
+            Din vej peger mod: <span style={{ color: '#9fb2d9' }}>{preview}</span> · Job Change Quest låses op ved Level 40
+          </p>
+        )}
+      </SystemPanel>
+
+      <SystemPanel>
+        <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#7c8db5' }}>Statusvindue</p>
+        <RadarChartSVG data={radarData} max={radarMax} />
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2">
+          {Object.entries(player.stats).map(([k, v]) => {
+            const meta = STAT_META[k];
+            return (
+              <div key={k} className="flex items-center gap-2 px-2 py-1.5 rounded-sm" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <meta.icon size={14} style={{ color: meta.color }} />
+                <div className="leading-tight">
+                  <p className="font-mono text-3xs" style={{ color: '#5b6b8c' }}>{k}</p>
+                  <p className="text-sm font-bold">{v}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </SystemPanel>
+
+      <p className="text-center font-mono text-3xs" style={{ color: '#3a4a6b' }}>
+        Fremskridt gemmes automatisk på denne telefon/browser.
+      </p>
+    </div>
+  );
+}
+
+function QuestRow({ item, player, onUpdate, onScale }) {
+  const Icon = item.icon;
+  const progress = player.dailyProgress[item.key];
+  const goal = player.dailyGoals[item.key];
+  const pct = Math.min(100, (progress / goal) * 100);
+  const done = progress >= goal;
+  const [editingGoal, setEditingGoal] = useState(false);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+        <div className="flex items-center gap-2">
+          <Icon size={15} style={{ color: done ? '#00d2ff' : '#7c8db5' }} />
+          <span className="text-sm font-semibold uppercase" style={{ color: done ? '#e8f4ff' : '#9fb2d9' }}>{item.label}</span>
+          {done && <IconCheck size={14} style={{ color: '#00d2ff' }} />}
+        </div>
+        <div className="flex items-center gap-1.5">
+          <input
+            type="number"
+            inputMode="decimal"
+            step={item.inputStep}
+            value={progress}
+            onChange={e => onUpdate(item.key, parseFloat(e.target.value))}
+            className="font-mono text-xs w-14 text-right bg-transparent outline-none"
+            style={{ color: '#e8f4ff', borderBottom: '1px solid #1c2947' }}
+          />
+          {editingGoal ? (
+            <input
+              type="number"
+              autoFocus
+              defaultValue={goal}
+              onBlur={e => { onScale(item.key, parseFloat(e.target.value) || goal); setEditingGoal(false); }}
+              onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+              className="font-mono text-xs w-14 text-right bg-transparent outline-none"
+              style={{ color: '#00d2ff', borderBottom: '1px solid #00d2ff' }}
+            />
+          ) : (
+            <button onClick={() => setEditingGoal(true)} className="font-mono text-xs" style={{ color: '#5b6b8c' }}>
+              / {goal}{item.unit}
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="w-full h-2 rounded-full overflow-hidden mb-1.5" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${pct}%`, background: done ? 'linear-gradient(90deg,#00d2ff,#3a7bd5)' : 'linear-gradient(90deg,#3a4a6b,#5b6b8c)' }}
+        />
+      </div>
+      <div className="flex gap-1.5 flex-wrap">
+        <button onClick={() => onUpdate(item.key, progress + item.step)} className="font-mono text-2xs px-2 py-1 rounded-sm" style={{ border: '1px solid #1c2947', color: '#7c8db5', background: 'transparent' }}>
+          +{item.step}{item.unit}
+        </button>
+        <button onClick={() => onUpdate(item.key, progress + item.step * 2)} className="font-mono text-2xs px-2 py-1 rounded-sm" style={{ border: '1px solid #1c2947', color: '#7c8db5', background: 'transparent' }}>
+          +{item.step * 2}{item.unit}
+        </button>
+        <button onClick={() => onUpdate(item.key, 0)} className="font-mono text-2xs px-2 py-1 rounded-sm ml-auto" style={{ color: '#3a4a6b', background: 'transparent' }}>
+          Nulstil
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function QuestTab({ player, onUpdate, onScale }) {
+  return (
+    <div className="space-y-4 pt-1">
+      <SystemPanel>
+        <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+          <p className="text-sm font-bold uppercase tracking-widest">"Den Svages Mod"</p>
+          {player.dailyRewardClaimed && (
+            <span className="font-mono text-2xs uppercase px-2 py-0.5 rounded-sm flex items-center gap-1" style={{ background: 'rgba(0,210,255,0.15)', color: '#00d2ff' }}>
+              <IconCheck size={12} /> Fuldført
+            </span>
+          )}
+        </div>
+        <p className="font-mono text-2xs mb-4" style={{ color: '#5b6b8c' }}>
+          Fuldfør alle 4 mål inden dagen er omme. Tryk på målet for at skalere det. Armbøjninger, Mavebøjninger, Squats og Løb fra "Log Træning" tælles automatisk med her.
+        </p>
+        <div className="space-y-5">
+          {QUEST_ITEMS.map(item => (
+            <QuestRow key={item.key} item={item} player={player} onUpdate={onUpdate} onScale={onScale} />
+          ))}
+        </div>
+      </SystemPanel>
+    </div>
+  );
+}
+
+function LogTab({ onSubmitText, onLogExercise }) {
+  const [text, setText] = useState('');
+  const [notRecognized, setNotRecognized] = useState(false);
+
+  function handleSubmit() {
+    if (!text.trim()) return;
+    const ok = onSubmitText(text);
+    if (ok) { setText(''); setNotRecognized(false); }
+    else setNotRecognized(true);
+  }
+
+  return (
+    <div className="space-y-4 pt-1">
+      <SystemPanel>
+        <p className="text-sm font-bold uppercase tracking-widest mb-1">Log Træning</p>
+        <p className="font-mono text-2xs mb-3" style={{ color: '#5b6b8c' }}>
+          Beskriv din træning, fx "Løb 6 km" eller "40 min styrketræning, bænkpres"
+        </p>
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          rows={3}
+          placeholder="Skriv hvad du har lavet..."
+          className="w-full font-mono text-sm p-3 outline-none resize-none rounded-sm"
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1c2947', color: '#e8f4ff' }}
+        />
+        {notRecognized && (
+          <p className="font-mono text-2xs mt-2 flex items-center gap-1.5" style={{ color: '#ffb347' }}>
+            <IconAlertTriangle size={12} /> Systemet kunne ikke genkende træningen. Prøv "Eller vælg øvelse" nedenfor.
+          </p>
+        )}
+        <button
+          onClick={handleSubmit}
+          className="mt-3 text-xs font-bold uppercase tracking-widest px-4 py-2.5 flex items-center gap-1.5"
+          style={{ background: 'linear-gradient(90deg,#00d2ff,#3a7bd5)', color: '#00131a', clipPath: 'polygon(8px 0,100% 0,100% 100%,0 100%,0 8px)' }}
+        >
+          Evaluér Træning <IconChevronRight size={14} />
+        </button>
+      </SystemPanel>
+
+      <SystemPanel glow={false}>
+        <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: '#7c8db5' }}>Eller vælg øvelse</p>
+        <p className="font-mono text-2xs mb-3" style={{ color: '#5b6b8c' }}>
+          Vælg kropsdel, så øvelse — appen viser hvilken evne den træner.
+        </p>
+        <ExercisePicker onLog={onLogExercise} />
+      </SystemPanel>
+    </div>
+  );
+}
+
+function ExercisePicker({ onLog }) {
+  const [groupId, setGroupId] = useState(TRAINING_GROUPS[0].id);
+  const [exerciseName, setExerciseName] = useState(TRAINING_GROUPS[0].exercises[0].name);
+  const [sets, setSets] = useState(3);
+  const [reps, setReps] = useState(10);
+  const [minutes, setMinutes] = useState(20);
+  const [km, setKm] = useState(3);
+
+  const group = TRAINING_GROUPS.find(g => g.id === groupId);
+  const exercise = group.exercises.find(e => e.name === exerciseName) || group.exercises[0];
+  const stat = exercise.stat || group.stat;
+  const meta = STAT_META[stat];
+  const maxMinutes = exercise.maxMinutes || 90;
+
+  function selectGroup(g) {
+    setGroupId(g.id);
+    setExerciseName(g.exercises[0].name);
+  }
+
+  function selectExercise(e) {
+    setExerciseName(e.name);
+  }
+
+  function submit() {
+    let opts, label, questDelta = 0;
+    if (exercise.mode === 'reps') {
+      opts = { sets, reps };
+      label = `${exercise.name} · ${sets}x${reps}`;
+      questDelta = sets * reps;
+    } else if (exercise.mode === 'distance') {
+      opts = { km };
+      label = `${exercise.name} · ${km} km`;
+      questDelta = km;
+    } else {
+      opts = { minutes };
+      label = `${exercise.name} · ${minutes} min`;
+    }
+    onLog({ label, stat, opts, questLink: exercise.questLink || null, questDelta });
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {TRAINING_GROUPS.map(g => (
+          <button
+            key={g.id}
+            onClick={() => selectGroup(g)}
+            className="text-xs font-semibold uppercase px-3 py-1.5 flex items-center gap-1.5 rounded-sm"
+            style={{
+              background: groupId === g.id ? STAT_META[g.stat].color : 'rgba(255,255,255,0.03)',
+              color: groupId === g.id ? '#050510' : '#9fb2d9',
+              border: `1px solid ${groupId === g.id ? STAT_META[g.stat].color : '#1c2947'}`,
+            }}
+          >
+            <g.icon size={13} /> {g.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        {group.exercises.map(e => (
+          <button
+            key={e.name}
+            onClick={() => selectExercise(e)}
+            className="font-mono text-xs px-2.5 py-1.5 rounded-sm"
+            style={{
+              background: exerciseName === e.name ? 'rgba(0,210,255,0.15)' : 'rgba(255,255,255,0.03)',
+              color: exerciseName === e.name ? '#00d2ff' : '#7c8db5',
+              border: `1px solid ${exerciseName === e.name ? '#00d2ff' : '#1c2947'}`,
+            }}
+          >
+            {e.name}
+          </button>
+        ))}
+      </div>
+
+      {exercise.mode === 'reps' && (
+        <div className="flex items-center gap-4 mb-4 flex-wrap">
+          <label className="font-mono text-2xs flex items-center gap-2" style={{ color: '#5b6b8c' }}>
+            Sæt
+            <input
+              type="number" inputMode="numeric" min={1} max={20} value={sets}
+              onChange={e => setSets(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              className="w-14 font-mono text-sm bg-transparent outline-none"
+              style={{ color: '#e8f4ff', borderBottom: '1px solid #1c2947' }}
+            />
+          </label>
+          <label className="font-mono text-2xs flex items-center gap-2" style={{ color: '#5b6b8c' }}>
+            Reps
+            <input
+              type="number" inputMode="numeric" min={1} max={100} value={reps}
+              onChange={e => setReps(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              className="w-14 font-mono text-sm bg-transparent outline-none"
+              style={{ color: '#e8f4ff', borderBottom: '1px solid #1c2947' }}
+            />
+          </label>
+        </div>
+      )}
+
+      {exercise.mode === 'duration' && (
+        <div className="flex items-center gap-3 mb-4">
+          <input type="range" min={5} max={maxMinutes} step={5} value={minutes} onChange={e => setMinutes(parseInt(e.target.value, 10))} className="flex-1" />
+          <span className="font-mono text-sm w-16 text-right">{minutes} min</span>
+        </div>
+      )}
+
+      {exercise.mode === 'distance' && (
+        <div className="flex items-center gap-3 mb-4">
+          <input type="range" min={0.5} max={21} step={0.5} value={km} onChange={e => setKm(parseFloat(e.target.value))} className="flex-1" />
+          <span className="font-mono text-sm w-16 text-right">{km} km</span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <span className="font-mono text-2xs flex items-center gap-1.5 flex-wrap" style={{ color: meta.color }}>
+          <meta.icon size={13} /> Træner: {meta.label}
+          {exercise.questLink && <span style={{ color: '#4ade80' }}>· tæller i Dagens Quest</span>}
+        </span>
+        <button
+          onClick={submit}
+          className="text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-sm"
+          style={{ border: '1px solid #3a7bd5', color: '#00d2ff', background: 'transparent' }}
+        >
+          Tilføj
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HistoryTab({ player }) {
+  return (
+    <div className="space-y-4 pt-1">
+      <SystemPanel>
+        <p className="text-sm font-bold uppercase tracking-widest mb-3">Titler</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {ACHIEVEMENTS.map(a => {
+            const unlocked = player.titles.includes(a.id);
+            return (
+              <div
+                key={a.id}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-sm"
+                style={{ background: unlocked ? 'rgba(255,209,102,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${unlocked ? '#ffd166' : '#1c2947'}`, opacity: unlocked ? 1 : 0.45 }}
+              >
+                <IconTrophy size={16} style={{ color: unlocked ? '#ffd166' : '#5b6b8c' }} />
+                <div>
+                  <p className="text-xs font-bold uppercase" style={{ color: unlocked ? '#ffe9b8' : '#7c8db5' }}>{a.title}</p>
+                  <p className="font-mono text-3xs" style={{ color: '#5b6b8c' }}>{a.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </SystemPanel>
+
+      <SystemPanel>
+        <p className="text-sm font-bold uppercase tracking-widest mb-3">Historik</p>
+        {player.history.length === 0 ? (
+          <p className="font-mono text-xs" style={{ color: '#5b6b8c' }}>Ingen træning logget endnu. Start i "Log Træning".</p>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+            {player.history.map(h => (
+              <div key={h.id} className="flex items-center justify-between px-3 py-2 rounded-sm" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <div>
+                  <p className="text-xs font-semibold" style={{ color: '#e8f4ff' }}>{h.label}</p>
+                  <p className="font-mono text-3xs" style={{ color: '#5b6b8c' }}>
+                    {new Date(h.date).toLocaleDateString('da-DK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-xs" style={{ color: '#00d2ff' }}>+{h.exp} EXP</p>
+                  <p className="font-mono text-3xs" style={{ color: '#5b6b8c' }}>
+                    {Object.entries(h.stats).map(([k, v]) => `${k}+${v}`).join(' ')}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SystemPanel>
+    </div>
+  );
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+function ModalShell({ eyebrow, tone = '#00d2ff', children }) {
+  return (
+    <SystemPanel style={{ overflow: 'hidden' }}>
+      <div className="absolute left-0 right-0 sl-scanline" style={{ background: `linear-gradient(90deg, transparent, ${tone}, transparent)`, top: 0, height: 1 }} />
+      <p className="font-mono text-2xs tracking-ultra mb-2" style={{ color: tone }}>{eyebrow}</p>
+      {children}
+    </SystemPanel>
+  );
+}
+
+function ModalCloseBtn({ onClose }) {
+  return (
+    <button onClick={onClose} className="text-xs font-bold uppercase tracking-widest px-4 py-2 w-full rounded-sm" style={{ background: 'linear-gradient(90deg,#00d2ff,#3a7bd5)', color: '#00131a' }}>
+      Fortsæt
+    </button>
+  );
+}
+
+function RecapModal({ payload, onClose }) {
+  return (
+    <ModalShell eyebrow="SYSTEM · TRÆNING EVALUERET">
+      <p className="text-lg font-bold uppercase mb-1">{payload.label}</p>
+      <p className="font-mono text-2xl mb-3" style={{ color: '#00d2ff' }}>+{payload.exp} EXP</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {Object.entries(payload.stats).map(([k, v]) => (
+          <span key={k} className="font-mono text-xs px-2 py-1 rounded-sm" style={{ background: 'rgba(255,255,255,0.05)', color: STAT_META[k].color }}>{k} +{v}</span>
+        ))}
+      </div>
+      {payload.penaltyResolved && <p className="font-mono text-xs mb-3" style={{ color: '#4ade80' }}>Penalty Zone ophævet.</p>}
+      <ModalCloseBtn onClose={onClose} />
+    </ModalShell>
+  );
+}
+
+function LevelUpModal({ payload, onClose }) {
+  return (
+    <ModalShell eyebrow="SYSTEM MESSAGE">
+      <p className="text-2xl font-bold uppercase mb-1" style={{ color: '#e8f4ff', textShadow: '0 0 20px rgba(0,210,255,0.6)' }}>Du er steget i level!</p>
+      <p className="font-mono text-sm mb-4" style={{ color: '#9fb2d9' }}>Level {payload.from} → <span style={{ color: '#00d2ff' }}>{payload.to}</span></p>
+      <ModalCloseBtn onClose={onClose} />
+    </ModalShell>
+  );
+}
+
+function QuestModal({ payload, onClose }) {
+  return (
+    <ModalShell eyebrow="SYSTEM · DAGENS QUEST">
+      <p className="text-xl font-bold uppercase mb-1">Fuldført!</p>
+      <p className="font-mono text-sm mb-1" style={{ color: '#9fb2d9' }}>"Den Svages Mod" er gennemført.</p>
+      <p className="font-mono text-2xl mb-4" style={{ color: '#00d2ff' }}>+{payload.bonus} EXP</p>
+      <ModalCloseBtn onClose={onClose} />
+    </ModalShell>
+  );
+}
+
+function JobChangeModal({ payload, onClose }) {
+  const info = CLASS_INFO[payload.cls];
+  return (
+    <ModalShell eyebrow="SYSTEM · JOB CHANGE QUEST" tone="#c792ff">
+      <p className="font-mono text-xs mb-2" style={{ color: '#9fb2d9' }}>Level 40 nået. Baseret på dine dominerende evner tildeles klassen:</p>
+      <p className="text-2xl font-bold uppercase mb-2" style={{ color: '#c792ff', textShadow: '0 0 20px rgba(199,146,255,0.6)' }}>{payload.cls}</p>
+      <p className="font-mono text-xs mb-4" style={{ color: '#7c8db5' }}>{info.desc}</p>
+      <ModalCloseBtn onClose={onClose} />
+    </ModalShell>
+  );
+}
+
+function ModalRenderer({ modal, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(2,4,12,0.8)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div className="sl-modal-in w-full" style={{ maxWidth: 384 }} onClick={e => e.stopPropagation()}>
+        {modal.type === 'recap' && <RecapModal payload={modal.payload} onClose={onClose} />}
+        {modal.type === 'levelup' && <LevelUpModal payload={modal.payload} onClose={onClose} />}
+        {modal.type === 'quest' && <QuestModal payload={modal.payload} onClose={onClose} />}
+        {modal.type === 'jobchange' && <JobChangeModal payload={modal.payload} onClose={onClose} />}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   APP
+   ============================================================ */
+function App() {
+  const [player, setPlayer] = useState(loadPlayer);
+  const [activeTab, setActiveTab] = useState('status');
+  const [modalQueue, setModalQueue] = useState([]);
+  const [toast, setToast] = useState(null);
+  const [resetArmed, setResetArmed] = useState(false);
+  const toastTimer = useRef(null);
+  const resetTimer = useRef(null);
+
+  useEffect(() => {
+    savePlayer(player);
+  }, [player]);
+
+  function showToast(msg) {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
+  }
+
+  function handleResetClick() {
+    if (!resetArmed) {
+      setResetArmed(true);
+      clearTimeout(resetTimer.current);
+      resetTimer.current = setTimeout(() => setResetArmed(false), 4000);
+    } else {
+      clearTimeout(resetTimer.current);
+      setPlayer(DEFAULT_PLAYER());
+      setModalQueue([]);
+      setResetArmed(false);
+      showToast('Fremskridt nulstillet');
+    }
+  }
+
+  function onRename(name) {
+    setPlayer(p => ({ ...p, name }));
+  }
+
+  function finalizeExpGrant(baseWorking, expAmount, prevLevel) {
+    const { player: afterExp, levelUps, jobChangeTriggered } = applyExpGain(baseWorking, expAmount);
+    let working = afterExp;
+    let penaltyResolved = false;
+    if (working.penaltyZone) { working = { ...working, penaltyZone: false }; penaltyResolved = true; }
+    if (jobChangeTriggered) working = { ...working, jobChangeSeen: true, class: computeClass(working.stats) };
+    const { titles, newlyUnlocked } = evaluateAchievements(working);
+    working = { ...working, titles };
+    const modals = [];
+    if (levelUps.length) modals.push({ type: 'levelup', payload: { from: prevLevel, to: working.level } });
+    if (jobChangeTriggered) modals.push({ type: 'jobchange', payload: { cls: working.class } });
+    return { working, modals, newlyUnlocked, penaltyResolved };
+  }
+
+  function applyWorkoutResult(parsed, label, questBump) {
+    const stats = { ...player.stats };
+    Object.entries(parsed.statsGained).forEach(([k, v]) => { stats[k] = (stats[k] || 0) + v; });
+    const base = { ...player, stats };
+    const prevLevel = player.level;
+
+    const step1 = finalizeExpGrant(base, parsed.expGained, prevLevel);
+    let working = step1.working;
+    let modals = [...step1.modals];
+    let newlyUnlocked = [...step1.newlyUnlocked];
+    let penaltyResolved = step1.penaltyResolved;
+
+    if (questBump && questBump.key && questBump.delta > 0) {
+      const isDistance = questBump.key === 'runKm';
+      const rawNew = (working.dailyProgress[questBump.key] || 0) + questBump.delta;
+      const newVal = isDistance ? Math.round(rawNew * 10) / 10 : Math.round(rawNew);
+      const afterBump = { ...working, dailyProgress: { ...working.dailyProgress, [questBump.key]: newVal } };
+
+      if (isQuestComplete(afterBump) && !afterBump.dailyRewardClaimed) {
+        const bonus = Math.round(300 * (1 + Math.min(afterBump.streak, 20) * 0.03));
+        const step2 = finalizeExpGrant({ ...afterBump, dailyRewardClaimed: true }, bonus, working.level);
+        working = step2.working;
+        modals = [...modals, { type: 'quest', payload: { bonus } }, ...step2.modals];
+        newlyUnlocked = [...newlyUnlocked, ...step2.newlyUnlocked];
+        if (step2.penaltyResolved) penaltyResolved = true;
+      } else {
+        working = afterBump;
+      }
+    }
+
+    const finalWorking = {
+      ...working,
+      history: [{ id: Date.now(), date: new Date().toISOString(), label, exp: parsed.expGained, stats: parsed.statsGained }, ...player.history].slice(0, 60),
+    };
+    setPlayer(finalWorking);
+    setModalQueue(q => [...q, { type: 'recap', payload: { exp: parsed.expGained, stats: parsed.statsGained, label, penaltyResolved } }, ...modals]);
+    if (newlyUnlocked.length) showToast(`Titel opnået: ${newlyUnlocked[0].title}`);
+  }
+
+  function handleLogText(rawText) {
+    const parsed = parseWorkoutText(rawText);
+    if (!parsed) return false;
+    applyWorkoutResult(parsed, rawText.trim());
+    return true;
+  }
+
+  function handleLogExercise({ label, stat, opts, questLink, questDelta }) {
+    let expGained, gain;
+    if (opts.minutes != null) {
+      const m = Math.max(5, opts.minutes);
+      expGained = Math.max(20, Math.round((20 + m * 3) / 5) * 5);
+      gain = Math.min(6, Math.max(1, Math.round(1 + m / 20)));
+    } else if (opts.km != null) {
+      const kmVal = Math.max(0.1, opts.km);
+      const effort = kmVal * 6;
+      expGained = Math.max(20, Math.round((25 + effort * 3) / 5) * 5);
+      gain = Math.min(6, Math.max(1, Math.round(1 + effort / 25)));
+    } else {
+      const sets = Math.max(1, opts.sets || 1);
+      const reps = Math.max(1, opts.reps || 1);
+      const effortScore = sets * reps;
+      expGained = Math.max(20, Math.round((20 + effortScore * 0.8) / 5) * 5);
+      gain = Math.min(6, Math.max(1, Math.round(1 + effortScore / 40)));
+    }
+    applyWorkoutResult(
+      { expGained, statsGained: { [stat]: gain } },
+      label,
+      questLink ? { key: questLink, delta: questDelta } : null,
+    );
+  }
+
+  function updateQuestProgress(key, rawValue) {
+    const value = Number.isFinite(rawValue) ? rawValue : 0;
+    const clamped = Math.max(0, key === 'runKm' ? Math.round(value * 10) / 10 : Math.round(value));
+    const dailyProgress = { ...player.dailyProgress, [key]: clamped };
+    const base = { ...player, dailyProgress };
+    const complete = isQuestComplete(base);
+
+    if (complete && !player.dailyRewardClaimed) {
+      const bonus = Math.round(300 * (1 + Math.min(player.streak, 20) * 0.03));
+      const prevLevel = player.level;
+      const { working, modals, newlyUnlocked } = finalizeExpGrant({ ...base, dailyRewardClaimed: true }, bonus, prevLevel);
+      setPlayer(working);
+      setModalQueue(q => [...q, { type: 'quest', payload: { bonus } }, ...modals]);
+      if (newlyUnlocked.length) showToast(`Titel opnået: ${newlyUnlocked[0].title}`);
+    } else {
+      setPlayer(base);
+    }
+  }
+
+  function updateQuestGoal(key, newGoal) {
+    const min = key === 'runKm' ? 1 : 5;
+    setPlayer(p => ({ ...p, dailyGoals: { ...p.dailyGoals, [key]: Math.max(min, Math.round(newGoal)) } }));
+  }
+
+  function acceptPenalty() {
+    const loss = Math.round(player.exp * 0.05);
+    setPlayer(p => ({ ...p, exp: Math.max(0, p.exp - loss), penaltyZone: false }));
+    showToast(`Straf accepteret: -${loss} EXP`);
+  }
+
+  const rank = getRankInfo(player.level);
+  const needed = expToNext(player.level);
+  const currentModal = modalQueue[0] || null;
+
+  return (
+    <div className="min-h-screen w-full relative overflow-x-hidden" style={{ background: '#050510', color: '#e8f4ff', fontFamily: "'Rajdhani', sans-serif" }}>
+      <BackgroundFX />
+      {player.penaltyZone && <PenaltyBanner onGoLog={() => setActiveTab('log')} onAccept={acceptPenalty} />}
+      <Header player={player} onRename={onRename} resetArmed={resetArmed} onResetClick={handleResetClick} />
+      <TabBar active={activeTab} setActive={setActiveTab} penalty={player.penaltyZone} />
+      <main className="relative z-10 max-w-5xl mx-auto px-4 pb-16">
+        {activeTab === 'status' && <StatusTab player={player} rank={rank} needed={needed} />}
+        {activeTab === 'quest' && <QuestTab player={player} onUpdate={updateQuestProgress} onScale={updateQuestGoal} />}
+        {activeTab === 'log' && <LogTab onSubmitText={handleLogText} onLogExercise={handleLogExercise} />}
+        {activeTab === 'history' && <HistoryTab player={player} />}
+      </main>
+      {toast && <Toast message={toast} />}
+      {currentModal && <ModalRenderer modal={currentModal} onClose={() => setModalQueue(q => q.slice(1))} />}
+    </div>
+  );
+}
+
+function showFatalError(err) {
+  const rootEl = document.getElementById('root');
+  if (!rootEl) return;
+  const message = (err && err.message) ? err.message : String(err);
+  rootEl.innerHTML =
+    '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#050510;color:#ff6b6b;font-family:monospace;padding:24px;text-align:center;white-space:pre-wrap;">Der opstod en fejl:\n\n' +
+    message +
+    '\n\nSend denne besked til Claude.</div>';
+}
+
+window.addEventListener('error', function (e) { showFatalError(e.error || e.message); });
+window.addEventListener('unhandledrejection', function (e) { showFatalError(e.reason); });
+
+try {
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+} catch (err) {
+  showFatalError(err);
+}
+
+</script>
+</body>
+</html>
